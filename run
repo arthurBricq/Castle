@@ -1,0 +1,54 @@
+#!/usr/bin/zsh
+local full_path=$(readlink -f $1)
+local file="${1:t}"
+local name="${1:t:r}"
+cd ${full_path:h}
+
+# Shebang
+local shebang=$(sed -n '1s/^#!//p' $file)
+if [[ -n $shebang ]]; then 
+  $shebang $file
+  return
+fi
+
+# Makefile
+while [[ ! -f Makefile ]] && [[ $PWD != / ]]; do
+  cd ..
+done
+if [[ -f Makefile ]]; then
+  echo Running makefile:
+  make
+  return
+fi
+cd ${full_path:h}
+
+# Extension
+case ${1:t:e} in
+  asm) nasm -f elf64 $file && ld -s -o $name.out $name.o && ./$name.out;;
+  bash) bash $file;;
+  bat|cmd) cmd.exe /C "$file";;
+  c) clang -o $name.out $file && ./$name.out;;
+  cc|cpp) clang++ -o $name.out -I/usr/include/eigen3 $file && ./$name.out;;
+  f90|f95|f03) gfortran -o $name.out $file && ./$name.out;;
+  go) go run $file;;
+  hs) ghc $file && ./$name;;
+  html) o $file;;
+  java) javac $file && java $name;;
+  jl) julia $file;;
+  js|mjs) node $file;;
+  kt) kotlinc $file -include-runtime -d $name.jar && java -jar $name.jar;;
+  lua) lua $file;;
+  m4) m4 -I $file > $name;;
+  mod|aMod) voc $file -M && echo && ./$name;;
+  nsi) cmd.exe /C "makensis $file && $name.exe";;
+  ps1) powershell.exe ".\\$file";;
+  py) python3 $file;;
+  r) Rscript $file;;
+  rb) ruby $file;;
+  rs) rustc $file -o $name.out && ./$name.out;;
+  scala) scala $file;;
+  sh) sh $file;;
+  ts) tsc $file && node $name.js;;
+  zsh) zsh $file;;
+  *) echo 'Nothing to do';;
+esac
